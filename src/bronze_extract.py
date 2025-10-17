@@ -16,14 +16,14 @@ for arquivo in landing_path.glob("*.xlsx"):
 #excel_files = landing_path / "venda_itens.xlsx"
 
     df = pd.read_excel(arquivo)
-
+    print(f"Arquivo excel lido")
+    
     '''Verificando a quantidade de linhas que tem a palavra CONSUMIDOR, previamente verificada, para excluí-las
     num_oc = df['Título'].astype(str).str.upper().str.contains('CONSUMIDOR').sum()
-    print(f'numerom de ocorrencias: {num_oc}')
+    print(f'numerom de ocorrencias: {num_oc}')'''
 
-    Eliminando essas linhas'''
-    df = df[~df['Título'].astype(str).str.startswith('1 - CONSUMIDOR')]
-    df = df[~df['Título'].astype(str).str.startswith('2 - ')]
+ #   Eliminando essas linhas - Parte Atualizada para tratar diversos tipos de caracteres nessa coluna
+    df = df[~df['Título'].astype(str).str.contains(r'^.*\s-\s')]
 
     #salvando em csv para a pasta bronze para depois tratar tipos de dados
     csv_file = bronze_path / (arquivo.stem + ".csv")
