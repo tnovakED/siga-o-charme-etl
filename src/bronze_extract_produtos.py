@@ -12,20 +12,18 @@ file_processed_folder = drive_path / "files_processed"
 bronze_path.mkdir(parents=True, exist_ok=True)
 file_processed_folder.mkdir(parents=True, exist_ok=True)
 
-for arquivo in landing_path.glob("*.xlsx"):
+for arquivo in landing_path.glob("prod*.xlsx"):
 #excel_files = landing_path / "venda_itens.xlsx"
 
-    df = pd.read_excel(arquivo)
+    df = pd.read_excel(arquivo, header=1)
     print(f"Arquivo excel lido")
+ 
+    #   Eliminando essas linhas - Parte Atualizada para tratar diversos tipos de caracteres nessa coluna
+    df = df[~df['Código'].astype(str).str.contains(r'^.*\s-\s')]
     
-    '''Verificando a quantidade de linhas que tem a palavra CONSUMIDOR, previamente verificada, para excluí-las
-    num_oc = df['Título'].astype(str).str.upper().str.contains('CONSUMIDOR').sum()
-    print(f'numerom de ocorrencias: {num_oc}')'''
-
- #   Eliminando essas linhas - Parte Atualizada para tratar diversos tipos de caracteres nessa coluna
-    df = df[~df['Título'].astype(str).str.contains(r'^.*\s-\s')]
-
-    #salvando em csv para a pasta bronze para depois tratar tipos de dados
+    print(df)
+    
+       #salvando em csv para a pasta bronze para depois tratar tipos de dados
     csv_file = bronze_path / (arquivo.stem + ".csv")
     df.to_csv(csv_file, index=False)
 

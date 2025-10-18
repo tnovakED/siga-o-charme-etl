@@ -1,0 +1,50 @@
+import pandas as pd
+from unidecode import unidecode
+from pathlib import Path
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+
+input_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data\bronze")
+arquivo = input_path / "produtos.csv"
+output_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data")
+
+# Nome da pasta a ser criada
+silver_folder = output_path / "silver"
+
+silver_folder.mkdir(parents=True, exist_ok=True)
+
+df = pd.read_csv(arquivo)
+
+# transfomação das colunas
+df.columns = [unidecode(col).lower().replace(' ', '_') for col in df.columns]
+df = df.rename(columns={'codigo': 'id_produto'})
+
+# Converter tipos de colunas_ verifcar colunas
+df['id_produto'] = pd.to_numeric(df['id_produto'], errors='coerce').astype('Int64').round(0).astype('Int64').fillna(0)
+df['descricao'] = df['descricao'].fillna('produto sem descricao')
+df['grupo_cod'] = pd.to_numeric(df['grupo_cod'], errors='coerce').round(0).astype('Int64').fillna(0)
+df['grupo_desc'] = df['grupo_desc'].fillna('desconhecido')
+df['subgrupo_cod'] = pd.to_numeric(df['subgrupo_cod'], errors='coerce').round(0).astype('Int64').fillna(0)
+df['subgrupo_desc'] = df['subgrupo_desc'].fillna('desconhecido')
+df = df.iloc[:-2]
+
+df_saida = df[['id_produto','descricao','grupo_cod','grupo_desc','subgrupo_cod','subgrupo_desc']]
+
+# Coluna de controle
+df_saida['data_proc'] = pd.Timestamp.now()
+
+print(df_saida)
+
+
+
+table = pa.Table.from_pandas(df_saida)
+parquet_path = silver_folder / f"produtos_silver_parquet" 
+
+pq.write_to_dataset(
+    table,
+    root_path=parquet_path,
+    compression = 'snappy'
+)
+
+print(f"Arquivo salvo: {parquet_path}")

@@ -17,7 +17,7 @@ silver_folder.mkdir(parents=True, exist_ok=True)
 dfs = []
 
 # Itera sobre a pasta onde estão os arquivos a serem processados.
-for arquivo in input_path.glob("*.csv"):
+for arquivo in input_path.glob("venda*.csv"):
     df = pd.read_csv(arquivo)
     
     # transfomação das colunas
@@ -35,10 +35,19 @@ for arquivo in input_path.glob("*.csv"):
     
     # Coluna de controle
     df['data_proc'] = pd.Timestamp.now()
-        
+    
+    
+    print("Antes do dropna:", len(df))
+    
     #deleta linhas com valores nulos
     lista_colunas = ['id_venda','emissao','vendedor','item','quantidade','valor_unitario','valor_total']
+    #print(df[lista_colunas].isna().sum())
+    print(df[lista_colunas].isna().sum())
+    
     df = df.dropna(subset=lista_colunas)
+    
+    print("Depois do dropna:", len(df))
+
 
     dfs.append((arquivo.stem,df))
 
