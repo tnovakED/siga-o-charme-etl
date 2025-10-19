@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 # Caminho da pasta do dataset Parquet
-caminho = Path(r'G:\Meu Drive\SigaoCharmeETL\data\silver\vendas2024_silver2.parquet')
+caminho = Path(r'G:\Meu Drive\SigaoCharmeETL\data\silver\vendas2024_silver_parquet')
 
 # Ler o dataset Parquet inteiro (pasta)
 df = pd.read_parquet(caminho)
