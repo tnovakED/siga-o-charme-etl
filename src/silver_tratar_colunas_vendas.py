@@ -3,10 +3,12 @@ from unidecode import unidecode
 from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
+import shutil
 
 
 input_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data\bronze")
 output_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data")
+file_processed = Path(r"G:\Meu Drive\SigaoCharmeETL\data\files_processed")
 
 # Nome da pasta a ser criada
 silver_folder = output_path / "silver"
@@ -35,19 +37,11 @@ for arquivo in input_path.glob("venda*.csv"):
     
     # Coluna de controle
     df['data_proc'] = pd.Timestamp.now()
-    
-    
-    print("Antes do dropna:", len(df))
-    
+        
     #deleta linhas com valores nulos
     lista_colunas = ['id_venda','emissao','vendedor','item','quantidade','valor_unitario','valor_total']
-    #print(df[lista_colunas].isna().sum())
-    print(df[lista_colunas].isna().sum())
     
     df = df.dropna(subset=lista_colunas)
-    
-    print("Depois do dropna:", len(df))
-
 
     dfs.append((arquivo.stem,df))
 
@@ -63,3 +57,11 @@ for nome, df in dfs:
     )
     
     print(f"Arquivo salvo: {parquet_path}")
+
+for arquivo in input_path.glob("venda*.csv"):
+    shutil.move(arquivo, file_processed / arquivo.name)
+    print(f'Arquivo {arquivo} movido para pasta {file_processed} com Sucesso!')
+    
+for arquivo in file_processed.glob("*.xls"):
+    arquivo.unlink()
+    print(f"Arquivo {arquivo} deletado da pasta {file_processed}")

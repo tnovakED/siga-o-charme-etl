@@ -3,11 +3,12 @@ from unidecode import unidecode
 from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
-
+import shutil
 
 input_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data\bronze")
 arquivo = input_path / "produtos.csv"
 output_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data")
+file_processed = Path(r"G:\Meu Drive\SigaoCharmeETL\data\files_processed")
 
 # Nome da pasta a ser criada
 silver_folder = output_path / "silver"
@@ -34,10 +35,6 @@ df_saida = df[['id_produto','descricao','grupo_cod','grupo_desc','subgrupo_cod',
 # Coluna de controle
 df_saida['data_proc'] = pd.Timestamp.now()
 
-print(df_saida)
-
-
-
 table = pa.Table.from_pandas(df_saida)
 parquet_path = silver_folder / f"produtos_silver_parquet" 
 
@@ -48,3 +45,7 @@ pq.write_to_dataset(
 )
 
 print(f"Arquivo salvo: {parquet_path}")
+
+for arquivo in input_path.glob("prod*.csv"):
+    shutil.move(arquivo, file_processed / arquivo.name)
+    print(f'Arquivo {arquivo} movido para pasta {file_processed} com Sucesso!')
