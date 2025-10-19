@@ -5,63 +5,56 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import shutil
 
-
+# Paths
 input_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data\bronze")
 output_path = Path(r"G:\Meu Drive\SigaoCharmeETL\data")
 file_processed = Path(r"G:\Meu Drive\SigaoCharmeETL\data\files_processed")
-
-# Nome da pasta a ser criada
 silver_folder = output_path / "silver"
 
+# Criar pastas se não existirem
 silver_folder.mkdir(parents=True, exist_ok=True)
+file_processed.mkdir(parents=True, exist_ok=True)
 
-# Armazena os dataframes criados de acordo com os arquivos processados.
 dfs = []
 
-# Itera sobre a pasta onde estão os arquivos a serem processados.
 for arquivo in input_path.glob("venda*.csv"):
-    df = pd.read_csv(arquivo)
-    
-    # transfomação das colunas
+    df = pd.read_csv(arquivo, dtype=str)  # lê tudo como string
+
+    # Normaliza colunas
     df.columns = [unidecode(col).lower().replace(' ', '_') for col in df.columns]
     df = df.rename(columns={'titulo': 'id_venda'})
 
-    # Converter tipos de colunas
-    df['id_venda'] = pd.to_numeric(df['id_venda'], errors='coerce').astype('Int64')
-    df['emissao'] = pd.to_datetime(df['emissao'], dayfirst=True, errors='coerce')
-    df['vendedor'] = pd.to_numeric(df['vendedor'], errors='coerce')
-    df['item'] = pd.to_numeric(df['item'], errors='coerce').round(0).astype('Int64')
-    df['quantidade'] = pd.to_numeric(df['quantidade'], errors='coerce').round(0).astype('Int64')
-    df['valor_unitario'] = pd.to_numeric(df['valor_unitario'], errors='coerce')
-    df['valor_total'] = pd.to_numeric(df['valor_total'], errors='coerce')
-    
+    # Limpa e converte colunas numéricas
+    numeric_cols = ['id_venda','vendedor','item','quantidade','valor_unitario','valor_total']
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace(r'[^\d,.-]', '', regex=True)
+                .str.replace(',', '.', regex=False)
+            )
+            if col in ['id_venda','vendedor','item','quantidade']:
+                df[col] = pd.to_numeric(df[col], errors='coerce').round(0).astype('Int64')
+            else:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
     # Coluna de controle
     df['data_proc'] = pd.Timestamp.now()
-        
-    #deleta linhas com valores nulos
-    lista_colunas = ['id_venda','emissao','vendedor','item','quantidade','valor_unitario','valor_total']
-    
-    df = df.dropna(subset=lista_colunas)
 
-    dfs.append((arquivo.stem,df))
+    dfs.append((arquivo.stem, df))
 
-# Gravação em Parquet
+# Salvar em Parquet
 for nome, df in dfs:
     table = pa.Table.from_pandas(df)
-    parquet_path = silver_folder / f"{nome}_silver_parquet" 
-    
+    parquet_path = silver_folder / f"{nome}_silver_parquet"
+
     pq.write_to_dataset(
         table,
         root_path=parquet_path,
-        compression = 'snappy'
+        compression='snappy'
     )
-    
-    print(f"Arquivo salvo: {parquet_path}")
 
-for arquivo in input_path.glob("venda*.csv"):
-    shutil.move(arquivo, file_processed / arquivo.name)
-    print(f'Arquivo {arquivo} movido para pasta {file_processed} com Sucesso!')
     
-for arquivo in file_processed.glob("*.xls"):
-    arquivo.unlink()
-    print(f"Arquivo {arquivo} deletado da pasta {file_processed}")
+    # Mover arquivo processado
+    shutil.move(input_path / f"{nome}.csv", file_processed / f"{nome}.csv")
